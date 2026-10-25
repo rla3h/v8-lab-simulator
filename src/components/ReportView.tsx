@@ -6,6 +6,7 @@ import { MODEL_VERSION } from '../dsp/compile';
 import { LEGAL_DISCLAIMER, LEGAL_ITEMS } from '../lib/legal';
 import { ExhaustDiagram } from './ExhaustBuilder';
 import { CarViews } from './CarViews';
+import { VehicleGallery } from './VehicleGallery';
 import { ConfBadge } from './ui';
 
 export const LIMITATIONS = [
@@ -80,6 +81,8 @@ export function ReportView() {
         </Section>
 
         <Section n={2} title="외장 계획 — 무광 블랙">
+          <VehicleGallery ids={['front', 'rear', 'side']} cols={4} />
+          <div className="mt-3" />
           <CarViews plan={project.exterior} tipsBlack={project.exterior.items.exhaustTips && ex.tips.finish === 'black'} />
           <p className="mt-2">
             도색 범위:{' '}
@@ -127,6 +130,9 @@ export function ReportView() {
             </tbody>
           </table>
           {ex.notes && <p className="mt-1 text-metal-500">메모: {ex.notes}</p>}
+          <div className="mt-3 max-w-md">
+            <VehicleGallery ids={['underbody']} cols={1} />
+          </div>
         </Section>
 
         <Section n={4} title="음향 분석 요약">

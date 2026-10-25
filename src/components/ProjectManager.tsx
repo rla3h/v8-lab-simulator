@@ -8,6 +8,7 @@ import { quoteText } from '../lib/quote';
 import { SCENARIOS } from '../lib/scenario';
 import { Card, Note, Tag } from './ui';
 import { CarViews } from './CarViews';
+import { VehicleGallery } from './VehicleGallery';
 import { ExhaustDiagram } from './ExhaustBuilder';
 import type { ExteriorPlan } from '../types';
 
@@ -189,6 +190,8 @@ export function ProjectManager() {
 
       <div className="flex flex-col gap-3">
         <Card title="외장 계획 — 무광 블랙" right={<Tag tone="gray">음향 영향 없음</Tag>}>
+          <VehicleGallery ids={['front', 'rear', 'side', 'underbody']} />
+          <div className="lbl mb-1 mt-4">도색 범위 미리보기 (아래 체크 항목 반영)</div>
           <CarViews plan={ext} tipsBlack={ext.items.exhaustTips && project.exhaust.tips.finish === 'black'} />
           <div className="mt-3 grid grid-cols-2 gap-x-4 gap-y-1.5 sm:grid-cols-3">
             {EXT_ITEMS.map((it) => (

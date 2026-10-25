@@ -6,6 +6,7 @@ import { compileExhaust, logFreqs, sideResponseDb } from '../dsp/compile';
 import { Card, Tag } from './ui';
 import { LineChart } from './charts';
 import { exportSvg, exportSvgAsPng } from '../lib/download';
+import { VehicleGallery } from './VehicleGallery';
 
 const W = 1000;
 const H = 380;
@@ -293,6 +294,12 @@ export function ExhaustBuilder() {
       <div className="overflow-hidden rounded-lg border border-ink-700">
         <ExhaustDiagram cfg={cfg} idSvg="exhaust-diagram" exteriorColor={exterior.items.body ? exterior.colorHex : '#4b5563'} wheelsBlack={exterior.items.wheels} />
       </div>
+      <details className="mt-2">
+        <summary className="cursor-pointer text-[11px] text-teal-300">하부 레퍼런스 사진 (사용자 제공 · 구조 참고용)</summary>
+        <div className="mt-2">
+          <VehicleGallery ids={['underbody']} cols={1} />
+        </div>
+      </details>
       <div className="mt-3">
         <div className="mb-1 flex items-center justify-between">
           <span className="lbl">배기 라인 선형 전달함수 (모델) — 촉매·레조네이터·머플러·관 공명</span>

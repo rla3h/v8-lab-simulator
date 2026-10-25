@@ -2,6 +2,7 @@ import { useStore } from '../store';
 import { engineById } from '../data/engines';
 import { GS460_PRESETS, PART_ORDER, PART_SPECS } from '../data/exhaust';
 import { Card, ConfBadge, Slider, Tag } from './ui';
+import { PHOTOS, photoUrl } from './VehicleGallery';
 
 export function LibraryPanel() {
   const project = useStore((s) => s.project);
@@ -17,6 +18,11 @@ export function LibraryPanel() {
   return (
     <div className="flex flex-col gap-3">
       <Card title="Engine" right={<button className="text-[10px] text-teal-300 hover:underline" onClick={() => set({ tab: 'engines' })}>라이브러리 →</button>}>
+        {eng.id === '1ur-fse' && (
+          <button className="mb-2 block w-full overflow-hidden rounded-md border border-ink-700" onClick={() => set({ tab: 'project' })} title="외장 계획·사진 보기">
+            <img src={photoUrl(PHOTOS[0])} alt="GS460 무광 블랙 전면" loading="lazy" width={1344} height={896} className="aspect-[3/2] w-full object-cover" />
+          </button>
+        )}
         <div className="font-mono text-lg font-bold text-white">{eng.code}</div>
         <div className="text-[11px] text-metal-500">{eng.application}</div>
         <dl className="mt-2 grid grid-cols-2 gap-x-2 gap-y-1 text-[11px]">
