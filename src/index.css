@@ -1,0 +1,105 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: dark;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  @apply bg-ink-950 text-metal-300 font-sans antialiased;
+}
+
+@layer components {
+  .card {
+    @apply rounded-xl border border-ink-600/70 bg-ink-900/90 shadow-[0_1px_0_0_rgba(255,255,255,0.03)_inset];
+  }
+  .card-h {
+    @apply flex items-center justify-between gap-2 border-b border-ink-700 px-3 py-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-metal-400;
+  }
+  .btn {
+    @apply inline-flex items-center justify-center gap-1.5 rounded-md border border-ink-500 bg-ink-800 px-2.5 py-1.5 text-xs font-medium text-metal-300 transition hover:border-metal-600 hover:bg-ink-700 active:translate-y-px disabled:cursor-not-allowed disabled:opacity-40;
+  }
+  .btn-primary {
+    @apply border-teal-600 bg-teal-600/20 text-teal-300 hover:bg-teal-600/30;
+  }
+  .btn-rpm {
+    @apply border-rpm-600 bg-rpm-600/20 text-rpm-400 hover:bg-rpm-600/30;
+  }
+  .lbl {
+    @apply text-[11px] uppercase tracking-wider text-metal-500;
+  }
+  .num {
+    @apply font-mono tabular-nums;
+  }
+  .input {
+    @apply rounded-md border border-ink-500 bg-ink-850 px-2 py-1 text-xs text-metal-300 outline-none focus:border-teal-500;
+  }
+}
+
+input[type='range'] {
+  -webkit-appearance: none;
+  appearance: none;
+  height: 6px;
+  border-radius: 999px;
+  background: #23272e;
+  outline: none;
+}
+input[type='range']::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--thumb, #2dd4bf);
+  border: 2px solid #0b0c0e;
+  box-shadow: 0 0 0 1px var(--thumb, #2dd4bf);
+  cursor: pointer;
+}
+input[type='range']::-moz-range-thumb {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--thumb, #2dd4bf);
+  border: 2px solid #0b0c0e;
+  cursor: pointer;
+}
+input[type='range']:focus-visible {
+  box-shadow: 0 0 0 2px #14b8a6;
+}
+
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-thumb {
+  background: #2e333b;
+  border-radius: 8px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+@media print {
+  body {
+    background: #fff !important;
+    color: #111 !important;
+  }
+  .no-print {
+    display: none !important;
+  }
+  .print-area {
+    color: #111 !important;
+  }
+  .print-area * {
+    color: #111 !important;
+    border-color: #bbb !important;
+    background: transparent !important;
+    box-shadow: none !important;
+  }
+}
