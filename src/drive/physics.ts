@@ -133,7 +133,7 @@ export function lateralCapacity(car: CarSpec, st: DriveState, brake: number, gri
   const mu = car.grip * gripMul * (st.boostT > 0 ? 1.05 : 1);
   const brakeShare = Math.min(0.85, (brake * car.brakeG) / mu);
   const latG = mu * Math.sqrt(Math.max(0.15, 1 - brakeShare * brakeShare));
-  return Math.min(latG * G, st.v * st.v / 5.5 + 0.8);
+  return Math.min(latG * G, (st.v * st.v) / 4 + 2);
 }
 
 /** Highest speed (m/s) a curve can be taken at without sliding, for HUD advice. */
@@ -217,24 +217,25 @@ export function stepCar(car: CarSpec, st: DriveState, inp: DriveInput, road: Roa
   const fEngineBrake = thr < 0.05 && st.shiftT <= 0 ? (((25 + rpm * 0.01) * ratio) / car.tireR) * Math.min(1, st.v / 5) : 0;
   const fBrake = Math.max(0, Math.min(1, inp.brake)) * Math.min(car.brakeG, car.grip * gripMul) * m * G;
   const fOff = st.offroad ? m * G * (road.offroadDrag + 0.004 * st.v) : 0;
-  const fScrub = st.slip * m * G * 0.35;
+  const fScrub = st.slip * m * G * 0.28;
   const resist = fAero + fRoll + fEngineBrake + fBrake + fOff + fScrub;
   let net = fDrive - m * G * road.slope - resist;
   if (st.v <= 0.05 && net < 0) net = 0; // at rest, friction/brakes hold the car
   st.v = Math.max(0, st.v + (net / m) * dt);
 
   // ── lateral: steering vs. the curve's centripetal demand
-  st.steer += (inp.steer - st.steer) * (1 - Math.exp(-dt * 7));
+  st.steer += (inp.steer - st.steer) * (1 - Math.exp(-dt * 13));
   const kappa = road.curve * KAPPA_PER_CURVE;
   const aNeed = st.v * st.v * kappa;
   const aCap = lateralCapacity(car, st, inp.brake, gripMul);
   const excess = Math.abs(aNeed) - aCap;
   const slipTarget = excess > 0 ? Math.min(1, excess / (aCap * 0.6 + 0.1)) : 0;
   st.slip += (slipTarget - st.slip) * (1 - Math.exp(-dt * 6));
-  let aRel = st.steer * aCap * (1 - 0.35 * st.slip) - aNeed;
-  if (st.slip > 0.01) aRel -= Math.sign(kappa) * st.slip * aCap * 0.5;
+  // arcade: steering can move the car a little beyond pure grip, so it feels light and responsive
+  let aRel = st.steer * aCap * 1.3 * (1 - 0.3 * st.slip) - aNeed;
+  if (st.slip > 0.01) aRel -= Math.sign(kappa) * st.slip * aCap * 0.35;
   st.vLat += aRel * dt;
-  st.vLat *= Math.exp(-dt * 2.2);
+  st.vLat *= Math.exp(-dt * 2.8);
   st.x += (st.vLat * dt) / road.halfWidthM;
 
   // ── barriers and surface

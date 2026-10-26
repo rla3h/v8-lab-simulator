@@ -1,5 +1,6 @@
 import type { CarSpec } from './cars';
-import { renderCarCanvas, type Tip } from './carArt';
+import { renderCarCanvas } from './carArt';
+import { CAR_PHOTOS, photoSprites, type CarSprite } from './carPhotos';
 import { BOOST_TIME, cornerSpeed, kmh, newDriveState, revNeutral, stepCar, tryBoost, type DriveState, type RoadSample } from './physics';
 import { TrackRenderer } from './render';
 import { buildBackdrop, buildSprites } from './sprites';
@@ -103,7 +104,7 @@ export class DriveGame {
   private lines: Line[] = [];
   private msgs: { text: string; t: number; color: string }[] = [];
   private crashCool = 0;
-  private carCache: { w: number; normal: HTMLCanvasElement; brake: HTMLCanvasElement; tips: Tip[] } | null = null;
+  private carCache: ({ w: number } & CarSprite) | null = null;
   private uiTimer = 0;
   private fps = 60;
   private zoomCanvas: HTMLCanvasElement | null = null;
@@ -115,6 +116,8 @@ export class DriveGame {
     readonly track: Track,
     private audio: DriveAudio | null,
     private onUi: (s: UiState) => void,
+    /** Real photo of the car (null → drawn illustration). */
+    private photo: HTMLImageElement | null = null,
   ) {
     this.ctx = canvas.getContext('2d')!;
     this.st = newDriveState(car);
@@ -224,8 +227,8 @@ export class DriveGame {
     const up = this.keys.up || this.touch.up;
     const dn = this.keys.down || this.touch.down;
     const steer = (this.keys.right || this.touch.right ? 1 : 0) - (this.keys.left || this.touch.left ? 1 : 0);
-    this.throttle += ((up ? 1 : 0) - this.throttle) * (1 - Math.exp(-dt * 5));
-    this.brake += ((dn ? 1 : 0) - this.brake) * (1 - Math.exp(-dt * 8));
+    this.throttle += ((up ? 1 : 0) - this.throttle) * (1 - Math.exp(-dt * 9));
+    this.brake += ((dn ? 1 : 0) - this.brake) * (1 - Math.exp(-dt * 12));
 
     if (this.phase === 'countdown') {
       const before = Math.ceil(this.countdown);
@@ -405,12 +408,17 @@ export class DriveGame {
 
   private carSprites(carW: number) {
     if (this.carCache && Math.abs(this.carCache.w - carW) < 8) return this.carCache;
+    const night = this.track.theme.night;
+    const meta = CAR_PHOTOS[this.car.id];
+    if (this.photo && meta) {
+      this.carCache = { w: carW, ...photoSprites(this.photo, meta, carW, night) };
+      return this.carCache;
+    }
     const cw = Math.round(carW / 0.88);
     const ch = Math.round(cw * 0.86);
-    const night = this.track.theme.night;
     const a = renderCarCanvas(this.car.art, cw, ch, { brake: false, lights: night });
     const b = renderCarCanvas(this.car.art, cw, ch, { brake: true, lights: true });
-    this.carCache = { w: carW, normal: a.canvas, brake: b.canvas, tips: a.tips };
+    this.carCache = { w: carW, normal: a.canvas, brake: b.canvas, ax: cw / 2, gy: ch * 0.94, tips: a.tips };
     return this.carCache;
   }
 
@@ -486,19 +494,28 @@ export class DriveGame {
     const carW = Math.min(W * 0.27, H * 0.62);
     const cs = this.carSprites(carW);
     const img = this.brake > 0.3 || this.phase === 'finished' ? cs.brake : cs.normal;
-    const yaw = -st.steer * 0.03 - Math.sign(this.segAt(this.z).curve) * st.slip * 0.07;
+    const yaw = -st.steer * 0.022 - Math.sign(this.segAt(this.z).curve) * st.slip * 0.06;
     const bounce = (st.offroad ? Math.sin(t * 40) * H * 0.004 * speedFrac : 0) + Math.sin(t * 13) * H * 0.0012 * speedFrac;
     const cx = W / 2 + st.vLat * W * 0.004 + shakeX * 0.3;
     const cy = carBottom + bounce;
+    if (cs.needsShadow) {
+      const sh = g.createRadialGradient(cx, cy, carW * 0.08, cx, cy, carW * 0.72);
+      sh.addColorStop(0, 'rgba(0,0,0,0.55)');
+      sh.addColorStop(1, 'rgba(0,0,0,0)');
+      g.fillStyle = sh;
+      g.beginPath();
+      g.ellipse(cx, cy, carW * 0.72, carW * 0.09, 0, 0, Math.PI * 2);
+      g.fill();
+    }
     g.save();
     g.translate(cx, cy);
     g.rotate(yaw);
-    g.drawImage(img, -img.width / 2, -img.height * 0.94, img.width, img.height);
+    g.drawImage(img, -cs.ax, -cs.gy, img.width, img.height);
     // boost flames from each tip
     if (boosting) {
       for (const tip of cs.tips) {
-        const fx = tip.x - img.width / 2;
-        const fy = tip.y - img.height * 0.94;
+        const fx = tip.x - cs.ax;
+        const fy = tip.y - cs.gy;
         const len = tip.r * (2.4 + Math.random() * 1.6);
         const fg = g.createRadialGradient(fx, fy, 0, fx, fy + len * 0.2, len);
         fg.addColorStop(0, 'rgba(220,245,255,0.95)');

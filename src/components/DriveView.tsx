@@ -7,29 +7,65 @@ import { TrackRenderer } from '../drive/render';
 import { buildBackdrop, buildSprites } from '../drive/sprites';
 import { DriveGame, fmtTime, loadBest, type UiState } from '../drive/game';
 import { DriveAudio } from '../drive/driveAudio';
+import { CAR_PHOTOS, PHOTO_CHANGES, loadCarPhoto } from '../drive/carPhotos';
 import { Note, Tag } from './ui';
 
 const PREF_KEY = 'v8lab.drive.pref.v1';
 
-function CarPreview({ car, w = 300, h = 190 }: { car: CarSpec; w?: number; h?: number }) {
+function CarPreview({ car, photo, w = 300, h = 190 }: { car: CarSpec; photo: boolean; w?: number; h?: number }) {
   const ref = useRef<HTMLCanvasElement>(null);
   useEffect(() => {
     const c = ref.current;
     if (!c) return;
+    let cancelled = false;
     const dpr = Math.min(2, window.devicePixelRatio || 1);
     c.width = w * dpr;
     c.height = h * dpr;
     const g = c.getContext('2d')!;
-    const bg = g.createLinearGradient(0, 0, 0, c.height);
-    bg.addColorStop(0, '#1c2028');
-    bg.addColorStop(0.62, '#0f1115');
-    bg.addColorStop(1, '#2a2d33');
-    g.fillStyle = bg;
-    g.fillRect(0, 0, c.width, c.height);
-    const { canvas } = renderCarCanvas(car.art, Math.round(c.width * 0.82), Math.round(c.width * 0.82 * 0.86));
-    g.drawImage(canvas, (c.width - canvas.width) / 2, c.height * 0.96 - canvas.height * 0.94);
-  }, [car, w, h]);
-  return <canvas ref={ref} style={{ width: '100%', aspectRatio: `${w} / ${h}` }} className="block rounded-md" aria-label={`${car.name} 후면 일러스트`} />;
+    const paintBg = () => {
+      const bg = g.createLinearGradient(0, 0, 0, c.height);
+      bg.addColorStop(0, '#1c2028');
+      bg.addColorStop(0.62, '#0f1115');
+      bg.addColorStop(1, '#2a2d33');
+      g.fillStyle = bg;
+      g.fillRect(0, 0, c.width, c.height);
+    };
+    const illustration = () => {
+      paintBg();
+      const { canvas } = renderCarCanvas(car.art, Math.round(c.width * 0.82), Math.round(c.width * 0.82 * 0.86));
+      g.drawImage(canvas, (c.width - canvas.width) / 2, c.height * 0.96 - canvas.height * 0.94);
+    };
+    const meta = CAR_PHOTOS[car.id];
+    if (!photo || !meta) {
+      illustration();
+      return;
+    }
+    paintBg();
+    loadCarPhoto(car.id).then((img) => {
+      if (cancelled) return;
+      if (!img) return illustration();
+      const scale = Math.min((c.width * 0.94) / meta.w, (c.height * 0.9) / meta.h);
+      const dw = meta.w * scale;
+      const dh = meta.h * scale;
+      const sh = g.createRadialGradient(c.width / 2, c.height * 0.95, 4, c.width / 2, c.height * 0.95, dw * 0.55);
+      sh.addColorStop(0, 'rgba(0,0,0,0.6)');
+      sh.addColorStop(1, 'rgba(0,0,0,0)');
+      g.fillStyle = sh;
+      g.fillRect(0, c.height * 0.85, c.width, c.height * 0.15);
+      g.drawImage(img, (c.width - dw) / 2, c.height * 0.97 - dh * meta.groundY, dw, dh);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [car, photo, w, h]);
+  return (
+    <canvas
+      ref={ref}
+      style={{ width: '100%', aspectRatio: `${w} / ${h}` }}
+      className="block rounded-md"
+      aria-label={`${car.name} 후면 ${photo ? '사진' : '일러스트'}`}
+    />
+  );
 }
 
 function TrackPreview({ id }: { id: TrackId }) {
@@ -130,13 +166,15 @@ function TouchControls({ game }: { game: DriveGame }) {
 export function DriveView() {
   const pref = useMemo(() => {
     try {
-      return JSON.parse(localStorage.getItem(PREF_KEY) || '{}') as { car?: string; track?: TrackId };
+      return JSON.parse(localStorage.getItem(PREF_KEY) || '{}') as { car?: string; track?: TrackId; photo?: boolean };
     } catch {
       return {};
     }
   }, []);
   const [carId, setCarId] = useState(pref.car && CARS.some((c) => c.id === pref.car) ? pref.car : 'gs460');
   const [trackId, setTrackId] = useState<TrackId>(pref.track && TRACK_IDS.includes(pref.track) ? pref.track : 'circuit');
+  const [usePhotos, setUsePhotos] = useState(pref.photo !== false);
+  const photoRef = useRef<HTMLImageElement | null>(null);
   const [running, setRunning] = useState(false);
   const [runId, setRunId] = useState(0);
   const [ui, setUi] = useState<UiState | null>(null);
@@ -154,11 +192,11 @@ export function DriveView() {
 
   useEffect(() => {
     try {
-      localStorage.setItem(PREF_KEY, JSON.stringify({ car: carId, track: trackId }));
+      localStorage.setItem(PREF_KEY, JSON.stringify({ car: carId, track: trackId, photo: usePhotos }));
     } catch {
       /* ignore */
     }
-  }, [carId, trackId]);
+  }, [carId, trackId, usePhotos]);
 
   const stopGame = () => {
     gameRef.current?.destroy();
@@ -172,6 +210,7 @@ export function DriveView() {
   const launch = async () => {
     stopGame();
     setAudioNote(null);
+    photoRef.current = usePhotos ? await loadCarPhoto(car.id) : null;
     const audio = new DriveAudio();
     try {
       await audio.start(car);
@@ -187,7 +226,7 @@ export function DriveView() {
   // create the game once the canvas is mounted
   useEffect(() => {
     if (!running || !canvasRef.current) return;
-    const game = new DriveGame(canvasRef.current, car, getTrack(trackId), audioRef.current, setUi);
+    const game = new DriveGame(canvasRef.current, car, getTrack(trackId), audioRef.current, setUi, photoRef.current);
     gameRef.current = game;
     game.start();
     wrapRef.current?.focus();
@@ -315,7 +354,7 @@ export function DriveView() {
           )}
         </div>
         <p className="text-[10px] text-metal-600">
-          엔진음은 V8 LAB DSP 합성(SIMULATED)이며 GS460은 현재 배기 설계를 사용합니다. 주행 물리와 기어비·공기저항은 게임용 근사입니다. 차량 그림은 실제 후면 디자인 특징을 참고한 일러스트입니다(사진 아님).
+          엔진음은 V8 LAB DSP 합성(SIMULATED)이며 GS460은 현재 배기 설계를 사용합니다. 주행 물리와 기어비·공기저항은 게임용 근사입니다. 차량 사진은 Wikimedia Commons의 자유 라이선스 사진을 배경 제거·번호판 교체해 사용했습니다(출처는 차량 선택 화면).
         </p>
       </div>
     );
@@ -346,7 +385,17 @@ export function DriveView() {
       </div>
 
       <section className="card p-3">
-        <div className="card-h -mx-3 -mt-3 mb-3">차량 선택 — 후면 일러스트</div>
+        <div className="card-h -mx-3 -mt-3 mb-3">
+          <span>차량 선택 — {usePhotos ? '실차 사진' : '후면 일러스트'}</span>
+          <span className="flex items-center gap-1 normal-case tracking-normal">
+            <button className={`btn px-2 py-0.5 text-[11px] ${usePhotos ? 'btn-primary' : ''}`} onClick={() => setUsePhotos(true)}>
+              사진
+            </button>
+            <button className={`btn px-2 py-0.5 text-[11px] ${!usePhotos ? 'btn-primary' : ''}`} onClick={() => setUsePhotos(false)}>
+              일러스트
+            </button>
+          </span>
+        </div>
         <div className="grid grid-cols-2 gap-2 md:grid-cols-3 xl:grid-cols-5">
           {CARS.map((c) => {
             const p = perf[c.id];
@@ -359,7 +408,7 @@ export function DriveView() {
                 data-testid={`car-${c.id}`}
                 className={`rounded-lg border p-2 text-left transition ${active ? 'border-rpm-500 bg-rpm-500/10' : 'border-ink-600 bg-ink-850 hover:border-ink-500'}`}
               >
-                <CarPreview car={c} />
+                <CarPreview car={c} photo={usePhotos} />
                 <div className="mt-1.5 flex items-center justify-between gap-1">
                   <span className={`truncate text-sm font-bold ${active ? 'text-rpm-400' : 'text-white'}`}>{c.short}</span>
                   <span className="shrink-0 text-[10px] text-metal-500">{c.drive} · {c.trans}</span>
@@ -374,13 +423,47 @@ export function DriveView() {
                   <Stat label="그립" value={c.grip.toFixed(2)} pct={((c.grip - 0.85) / 0.3) * 100} color="#4ade80" />
                 </div>
                 {best !== null && <div className="mt-1 text-[10px] text-yellow-300/80">이 트랙 최고 {fmtTime(best)}</div>}
+                {usePhotos && CAR_PHOTOS[c.id] && (
+                  <div className="mt-1 truncate text-[9px] text-metal-600" title={CAR_PHOTOS[c.id].credit.title}>
+                    사진: {CAR_PHOTOS[c.id].credit.author} · {CAR_PHOTOS[c.id].credit.license}
+                  </div>
+                )}
               </button>
             );
           })}
         </div>
         <div className="mt-2 text-[11px] text-metal-500">
           <span className="text-metal-300">{car.name}</span> — {car.note}
+          {usePhotos && CAR_PHOTOS[car.id]?.note && <span className="text-amber-200/70"> · 사진: {CAR_PHOTOS[car.id].note}</span>}
         </div>
+        <details className="mt-2 text-[11px] text-metal-500">
+          <summary className="cursor-pointer text-teal-300">사진 출처 · 라이선스 (Wikimedia Commons)</summary>
+          <ul className="mt-1.5 space-y-1">
+            {CARS.map((c) => {
+              const p = CAR_PHOTOS[c.id];
+              if (!p) return null;
+              return (
+                <li key={c.id}>
+                  <span className="text-metal-300">{c.short}</span> —{' '}
+                  <a className="text-teal-300 hover:underline" href={p.credit.source} target="_blank" rel="noreferrer">
+                    {p.credit.title}
+                  </a>{' '}
+                  · {p.credit.author} ·{' '}
+                  {p.credit.licenseUrl ? (
+                    <a className="hover:underline" href={p.credit.licenseUrl} target="_blank" rel="noreferrer">
+                      {p.credit.license}
+                    </a>
+                  ) : (
+                    p.credit.license
+                  )}
+                </li>
+              );
+            })}
+          </ul>
+          <p className="mt-1.5 text-metal-600">
+            변경 사항: {PHOTO_CHANGES}(GS460은 배지 합성 포함). 변경한 사진은 원본과 같은 라이선스(CC BY-SA 등)를 따릅니다. 개인 번호판은 노출하지 않습니다.
+          </p>
+        </details>
       </section>
 
       <section className="card p-3">
@@ -420,7 +503,7 @@ export function DriveView() {
         </span>
       </div>
       <p className="text-[10px] text-metal-600">
-        차량 그림은 실제 차량의 후면 디자인 특징(램프 형태·머플러 배치·스포일러)을 참고한 일러스트이며 사진·로고를 사용하지 않았습니다. 출력·중량은 공개 제원, 기어비·공기저항·그립은 게임용 근사값입니다.
+        차량 사진은 Wikimedia Commons의 자유 라이선스(CC BY-SA·CC0·퍼블릭 도메인) 사진이며 위 출처 목록에 작가·라이선스를 표기했습니다. "일러스트"를 고르면 직접 그린 그림을 씁니다. 출력·중량은 공개 제원, 기어비·공기저항·그립은 게임용 근사값입니다.
       </p>
     </div>
   );
