@@ -18,7 +18,7 @@ import { GS460_PRESETS, PART_SPECS, makePart, newUid, presetTiger5050, stockExha
 import type { CoreTelemetry } from './dsp/core';
 import type { AnalysisResult } from './analysis/analyze';
 
-export type Tab = 'workspace' | 'engines' | 'ab' | 'analysis' | 'project' | 'legal' | 'report';
+export type Tab = 'workspace' | 'drive' | 'engines' | 'ab' | 'analysis' | 'project' | 'legal' | 'report';
 export type Side = 'left' | 'right';
 export type Selection =
   | { zone: 'part'; side: Side; uid: string }
@@ -66,6 +66,8 @@ export interface State {
   symmetric: boolean;
   toast: string | null;
   audio: { on: boolean; mode: string | null; error: string | null };
+  /** Who drives the audio engine: the lab's A/B sync or the driving game. */
+  audioOwner: 'lab' | 'drive';
   telemetry: CoreTelemetry | null;
   analysis: AnalysisResult | null;
   analysisStale: boolean;
@@ -178,6 +180,7 @@ export const useStore = create<State>((set, get) => {
     symmetric: true,
     toast: null,
     audio: { on: false, mode: null, error: null },
+    audioOwner: 'lab',
     telemetry: null,
     analysis: null,
     analysisStale: true,

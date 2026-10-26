@@ -81,6 +81,9 @@ export interface CoreControl {
   solo?: number;
   /** Monitor level assist: slow boost referenced to voice A only, applied equally to A and B. */
   agc?: boolean;
+  /** RPM slew limits (rpm/s). The lab uses 6000/4200; the driving game needs fast gear changes. */
+  slewUp?: number;
+  slewDown?: number;
 }
 
 export interface CoreTelemetry {
@@ -657,6 +660,8 @@ export class V8Core {
     if (c.directRpm !== undefined) this.direct = c.directRpm;
     if (c.solo !== undefined) this.solo = c.solo;
     if (c.agc !== undefined) this.agcOn = c.agc;
+    if (c.slewUp !== undefined) this.slewUp = c.slewUp;
+    if (c.slewDown !== undefined) this.slewDown = c.slewDown;
   }
 
   /** Message entry point shared by the worklet and the ScriptProcessor fallback. */

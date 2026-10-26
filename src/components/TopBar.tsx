@@ -6,6 +6,7 @@ import { stockExhaustFor } from '../data/exhaust';
 
 const TABS: { id: Tab; label: string; sub: string }[] = [
   { id: 'workspace', label: 'Workspace', sub: '배기 빌더 · 라이브' },
+  { id: 'drive', label: 'Drive', sub: '주행 모드 · 9대 · 3트랙' },
   { id: 'engines', label: 'Engine Library', sub: '엔진 라이브러리' },
   { id: 'ab', label: 'A/B Comparison', sub: '순정 vs 튜닝' },
   { id: 'analysis', label: 'Acoustic Analysis', sub: '음향 분석' },

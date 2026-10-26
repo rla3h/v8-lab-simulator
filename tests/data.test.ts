@@ -15,7 +15,7 @@ describe('engine library', () => {
   });
 
   it('cross-plane V8s fire the same bank twice in a row somewhere in the cycle (source of burble)', () => {
-    for (const e of ENGINES) {
+    for (const e of ENGINES.filter((x) => x.cylinders === 8 && x.crank.value === 'cross-plane')) {
       const { banks } = firingEvents(e);
       const repeats = banks.filter((b, i) => b === banks[(i + 1) % banks.length]).length;
       expect(repeats).toBeGreaterThan(0);
@@ -27,6 +27,13 @@ describe('engine library', () => {
       expect(e.idleRpm.value).toBeNull();
       expect(e.idleRpm.confidence).toBe('unknown');
       expect(e.redlineRpm.value).toBeNull();
+    }
+  });
+
+  it('even-firing V10 / V6 / inline-4 alternate banks (no double firing per bank)', () => {
+    for (const id of ['s85', 'g6ba', 'g20t']) {
+      const { banks } = firingEvents(ENGINES.find((e) => e.id === id)!);
+      expect(banks.every((b, i) => b !== banks[(i + 1) % banks.length])).toBe(true);
     }
   });
 

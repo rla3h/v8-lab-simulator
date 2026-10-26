@@ -304,7 +304,90 @@ export const STOCK_EXHAUSTS: Record<string, () => ExhaustConfig> = {
       ],
       'CT5-V Blackwing 순정 배기 구조 미확인 — 가정 모델.',
     ),
+  // ───── V8 LAB DRIVE cars (all assumed layouts) ─────
+  'ls460-stock': () =>
+    stock(
+      'ls460-stock',
+      'LS460 순정 — 가정 모델',
+      () => [
+        makePart('pipe', { lengthMm: 700, diameterMm: 57 }),
+        makePart('res-helmholtz', { tuneHz: 85, depthDb: 10, q: 1.2 }),
+        makePart('res-absorptive', { cornerHz: 800, cutDb: 7 }),
+        makePart('pipe', { lengthMm: 900, diameterMm: 57 }),
+        makePart('muffler-chambered', { attenDb: 24, lowpassHz: 300 }),
+      ],
+      'LS460 순정 배기 구조 미확인 — 정숙성 위주 가정 모델.',
+    ),
+  'gsf-stock': () => ({
+    ...stock(
+      'gsf-stock',
+      'GS F 순정 — 가정 모델',
+      () => [
+        makePart('pipe', { lengthMm: 700, diameterMm: 63.5 }),
+        makePart('res-absorptive', { cornerHz: 1100, cutDb: 3 }),
+        makePart('pipe', { lengthMm: 900, diameterMm: 63.5 }),
+        makePart('muffler-valved', { closedAttenDb: 17, closedLowpassHz: 450, openAttenDb: 6, openHfCutDb: 2 }),
+      ],
+      'GS F 순정 배기 구조 미확인 — 가정 모델 (가변 밸브 머플러 가정).',
+    ),
+    crossover: { type: 'h', coupling: 0.5, diameterMm: 63.5 },
+  }),
+  '86-zn6-stock': () =>
+    merged(
+      '86-zn6-stock',
+      '86 GT 순정 — 가정 모델',
+      () => [
+        makePart('pipe', { lengthMm: 1200, diameterMm: 54 }),
+        makePart('res-absorptive', { cornerHz: 1200, cutDb: 4 }),
+        makePart('pipe', { lengthMm: 600, diameterMm: 54 }),
+        makePart('muffler-chambered', { attenDb: 12, lowpassHz: 800 }),
+      ],
+      '86 순정 배기 미확인 — 단일 배관 합류 후 듀얼 팁으로 가정.',
+    ),
+  'tuscani-gk-stock': () =>
+    merged(
+      'tuscani-gk-stock',
+      '투스카니 2.7 순정 — 가정 모델',
+      () => [
+        makePart('pipe', { lengthMm: 1100, diameterMm: 54 }),
+        makePart('res-helmholtz', { tuneHz: 110, depthDb: 6, q: 1.3 }),
+        makePart('pipe', { lengthMm: 700, diameterMm: 54 }),
+        makePart('muffler-chambered', { attenDb: 14, lowpassHz: 600 }),
+      ],
+      '투스카니 순정 배기 미확인 — V6 양 뱅크 합류 후 듀얼 팁으로 가정.',
+    ),
+  'avante-n-stock': () =>
+    merged(
+      'avante-n-stock',
+      '아반떼 N 순정 — 가정 모델',
+      () => [
+        makePart('pipe', { lengthMm: 1000, diameterMm: 63.5 }),
+        makePart('res-absorptive', { cornerHz: 1000, cutDb: 3 }),
+        makePart('pipe', { lengthMm: 700, diameterMm: 63.5 }),
+        makePart('muffler-valved', { closedAttenDb: 16, closedLowpassHz: 450, openAttenDb: 4, openHfCutDb: 1 }),
+      ],
+      '아반떼 N 순정 배기 미확인 — 단일 배관 합류 + 가변 밸브 듀얼 출구로 가정.',
+    ),
+  'm5-e60-stock': () => ({
+    ...stock(
+      'm5-e60-stock',
+      'M5 E60/E61 순정 — 가정 모델',
+      () => [
+        makePart('pipe', { lengthMm: 900, diameterMm: 63.5 }),
+        makePart('res-absorptive', { cornerHz: 1500, cutDb: 3 }),
+        makePart('pipe', { lengthMm: 700, diameterMm: 63.5 }),
+        makePart('muffler-straight', { attenDb: 9, hfCutDb: 2 }),
+      ],
+      'M5 E60/E61 순정 배기 구조 미확인 — H 연결 + 흡음형 머플러로 가정.',
+    ),
+    crossover: { type: 'h', coupling: 0.5, diameterMm: 63.5 },
+  }),
 };
+
+/** Single-pipe layouts (inline/boxer/V6 merged): full coupling makes both outlets carry every pulse. */
+function merged(id: string, name: string, parts: () => Part[], notes: string): ExhaustConfig {
+  return { ...stock(id, name, parts, notes), crossover: { type: 'x', coupling: 1, diameterMm: 60 } };
+}
 
 export function stockExhaustFor(stockId: string): ExhaustConfig {
   const make = STOCK_EXHAUSTS[stockId];

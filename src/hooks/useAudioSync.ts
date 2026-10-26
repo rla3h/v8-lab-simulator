@@ -13,7 +13,20 @@ export function useAudioSync() {
     let hybridKey = '';
     const hybridPaths: (HybridPath | null)[] = [null, null];
 
+    let owner: State['audioOwner'] = 'lab';
     const sync = (s: State) => {
+      if (s.audioOwner === 'drive') {
+        owner = 'drive';
+        return;
+      }
+      if (owner === 'drive') {
+        // the game changed voices/controls: push everything again
+        owner = 'lab';
+        voiceKeys[0] = voiceKeys[1] = '';
+        controlKey = '';
+        hybridKey = '';
+        audioEngine.setControl({ slewUp: 6000, slewDown: 4200 });
+      }
       const p = s.project;
       const c = s.controls;
       ([0, 1] as const).forEach((slot) => {

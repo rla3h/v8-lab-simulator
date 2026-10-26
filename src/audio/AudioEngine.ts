@@ -57,6 +57,11 @@ export class AudioEngine {
     nodes: ({ src: AudioBufferSourceNode; gain: GainNode; conv: ConvolverNode | null } | null)[];
   } = { blend: 0, paths: [null, null], nodes: [null, null] };
 
+  /** Master bus, for auxiliary sources (e.g. the driving game's wind and tyre noise). */
+  get output(): GainNode | null {
+    return this.master;
+  }
+
   get running() {
     return !!this.ctx && this.ctx.state === 'running';
   }

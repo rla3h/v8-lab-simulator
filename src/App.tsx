@@ -11,6 +11,7 @@ const ABCompare = lazy(() => import('./components/ABCompare').then((m) => ({ def
 const AnalysisView = lazy(() => import('./components/AnalysisView').then((m) => ({ default: m.AnalysisView })));
 const ProjectManager = lazy(() => import('./components/ProjectManager').then((m) => ({ default: m.ProjectManager })));
 const LegalCheck = lazy(() => import('./components/LegalCheck').then((m) => ({ default: m.LegalCheck })));
+const DriveView = lazy(() => import('./components/DriveView').then((m) => ({ default: m.DriveView })));
 const ReportView = lazy(() => import('./components/ReportView').then((m) => ({ default: m.ReportView })));
 
 // exposed for debugging / automated verification in the browser
@@ -27,6 +28,7 @@ export function App() {
         <ErrorBoundary resetKey={tab}>
         <Suspense fallback={<div className="p-6 text-sm text-metal-500">불러오는 중…</div>}>
           {tab === 'workspace' && <Workspace />}
+          {tab === 'drive' && <DriveView />}
           {tab === 'engines' && <EngineLibrary />}
           {tab === 'ab' && <ABCompare />}
           {tab === 'analysis' && <AnalysisView />}
